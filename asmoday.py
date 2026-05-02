@@ -57,10 +57,10 @@ except Exception:
 # =========================================================
 # KONFIG
 # =========================================================
-TOKEN = os.getenv("BOT_TOKEN")
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 
-if not TOKEN:
-    raise ValueError("BOT_TOKEN tidak ditemukan. Pastikan sudah diset di environment.")
+if not BOT_TOKEN:
+    raise RuntimeError("BOT_TOKEN tidak ditemukan. Pastikan sudah diset di environment hosting.")
 
 OWNER_USERNAME = "deittee"
 
@@ -72,14 +72,18 @@ FORWARD_STAFFTALK_CHAT_ID = -1003742691663
 
 FORNEUS_UID = 8065791665
 BASE_DIR = Path(__file__).resolve().parent
-STOCKFISH_PATH = str(BASE_DIR / "stockfish")
+ASSETS_DIR = BASE_DIR / "assets"
+IDC_DIR = ASSETS_DIR / "idc"
+FONT_DIR = ASSETS_DIR / "fonts"
+
+STOCKFISH_PATH = str(BASE_DIR / "stockfish_engine")
 if not os.path.exists(STOCKFISH_PATH):
     print("Downloading Stockfish...")
     url = "https://github.com/official-stockfish/Stockfish/releases/latest/download/stockfish-ubuntu-x86-64-avx2"
     urllib.request.urlretrieve(url, STOCKFISH_PATH)
     os.chmod(STOCKFISH_PATH, 0o755)
 
-CHESS_ASSET_DIR = str(Path.home() / "Documents" / "Oxana" / "chess")
+CHESS_ASSET_DIR = str(ASSETS_DIR / "Chess")
 CHESS_BOARD_MARGIN = 37
 CHESS_PIECE_SCALE = 0.85
 # Ukuran grid asli design: fullboard 512px, area kotak 437.6466px.
@@ -98,10 +102,11 @@ STAFF_INTERVIEW_FILE = "oxana_staff_interview.json"
 CURATED_DINING_FILE = "oxana_curated_dining.json"
 CUSTOM_COMMAND_FILE = "oxana_custom_commands.json"
 
-# Folder asset IDC. Taruh template Staff IDC.png di sini.
-IDCARD_ASSET_DIR = str(Path.home() / "Documents" / "Oxana")
+
+IDCARD_ASSET_DIR = str(IDC_DIR)
+IDCARD_FONT_DIR = str(FONT_DIR)
 IDCARD_TEMPLATE_FILE = "staff_idc.png"
-IDCARD_MEMBER_DIR = "idc-member"
+IDCARD_MEMBER_DIR = "."
 IDCARD_MEMBER_VIP_FILE = "idc-mem-vip.png"
 IDCARD_MEMBER_REG_FILE = "idc-mem-reg.png"
 IDCARD_BASE_W = 1024
@@ -167,7 +172,6 @@ MENU_CATEGORY_CREATE_ROWS = [
     [("exclusive", "Exclusive Menu"), ("vip", "VIP Only")],
     [("limited", "Limited Edition Drink")],
 ]
-
 
 # =========================================================
 # DATA
@@ -5409,8 +5413,8 @@ def _idcard_template_info(rec: dict):
     membership_type = (rec.get("membership_type") or "").strip().lower()
 
     staff_path = base / "staff_idc.png"
-    vip_path = base / IDCARD_MEMBER_DIR / "idc-mem-vip.png"
-    reg_path = base / IDCARD_MEMBER_DIR / "idc-mem-reg.png"
+    vip_path = base / IDCARD_MEMBER_DIR / IDCARD_MEMBER_VIP_FILE
+    reg_path = base / IDCARD_MEMBER_DIR / IDCARD_MEMBER_REG_FILE
 
     if account_type in ("staff", "owner"):
         return staff_path, (209, 211, 212, 255), "staff"
@@ -5519,7 +5523,7 @@ def _idcard_member_status_text(rec: dict) -> str:
 
 
 def _idcard_photo_cache_path(user_id) -> Path:
-    cache_dir = Path(IDCARD_ASSET_DIR) / "idc-photo-cache"
+    cache_dir = BASE_DIR / "idc-photo-cache"
     try:
         cache_dir.mkdir(parents=True, exist_ok=True)
     except Exception:
@@ -5608,6 +5612,7 @@ async def _render_staff_idcard_png(context, user, rec):
         return None, "Library Pillow belum tersedia. Install dulu dengan: pip install pillow"
 
     base = Path(IDCARD_ASSET_DIR)
+    font_base = Path(IDCARD_FONT_DIR)
     candidates = [
         base / "staff_idc.png",
         base / "Staff IDC.png",
@@ -5661,8 +5666,8 @@ async def _render_staff_idcard_png(context, user, rec):
     num_y = int(221 * sy)
 
     name_font_names = [
-        str(base / "PlayfairDisplaySC-Bold.ttf"),
-        str(base / "PlayfairDisplay-Bold.ttf"),
+        str(font_base / "PlayfairDisplaySC-Bold.ttf"),
+        str(font_base / "PlayfairDisplay-Bold.ttf"),
         "PlayfairDisplaySC-Bold.ttf", "PlayfairDisplay-Bold.ttf",
         "Times New Roman Bold.ttf", "Times New Roman.ttf", "Times New Roman",
         "Times New Roman Bold", "/Library/Fonts/Times New Roman Bold.ttf",
@@ -5670,8 +5675,9 @@ async def _render_staff_idcard_png(context, user, rec):
         "Georgia Bold.ttf", "DejaVuSerif-Bold.ttf",
     ]
     role_font_names = [
-        str(base / "dm-sans-9pt-regular.ttf"),
-        str(base / "DMSans-Regular.ttf"),
+        str(font_base / "dm-sans-9pt-regular.ttf"),
+        str(font_base / "DMSans-Regular.ttf"),
+        str(font_base / "DMSans_18pt-ExtraBold.ttf"),
         "dm-sans-9pt-regular.ttf", "DM Sans.ttf", "DMSans-Regular.ttf",
         "/Library/Fonts/DM Sans.ttf", "/System/Library/Fonts/Supplemental/Arial.ttf",
         "Arial.ttf", "Helvetica.ttf", "DejaVuSans.ttf",
@@ -5753,18 +5759,18 @@ async def _render_member_idcard_png(context, user, rec):
     acc_no = str(rec.get("acc_no", "-"))
 
     dm_sans_extra = [
-        str(Path(IDCARD_ASSET_DIR) / "DMSans-ExtraBold.ttf"),
-        str(Path(IDCARD_ASSET_DIR) / "DM Sans ExtraBold.ttf"),
-        str(Path(IDCARD_ASSET_DIR) / "dm-sans-9pt-extrabold.ttf"),
-        str(Path(IDCARD_ASSET_DIR) / "DMSans_18pt-ExtraBold.ttf"),
-        str(Path(IDCARD_ASSET_DIR) / "DMSans-Bold.ttf"),
+        str(Path(IDCARD_FONT_DIR) / "DMSans-ExtraBold.ttf"),
+        str(Path(IDCARD_FONT_DIR) / "DM Sans ExtraBold.ttf"),
+        str(Path(IDCARD_FONT_DIR) / "dm-sans-9pt-extrabold.ttf"),
+        str(Path(IDCARD_FONT_DIR) / "DMSans_18pt-ExtraBold.ttf"),
+        str(Path(IDCARD_FONT_DIR) / "DMSans-Bold.ttf"),
         "DMSans-ExtraBold.ttf", "DM Sans ExtraBold.ttf", "DMSans-Bold.ttf",
         "Arial Bold.ttf", "Arial.ttf", "Helvetica Bold.ttf", "DejaVuSans-Bold.ttf",
     ]
     playfair = [
-        str(Path(IDCARD_ASSET_DIR) / "PlayfairDisplay-Bold.ttf"),
-        str(Path(IDCARD_ASSET_DIR) / "PlayfairDisplaySC-Bold.ttf"),
-        str(Path(IDCARD_ASSET_DIR) / "PlayfairDisplay-Black.ttf"),
+        str(Path(IDCARD_FONT_DIR) / "PlayfairDisplay-Bold.ttf"),
+        str(Path(IDCARD_FONT_DIR) / "PlayfairDisplaySC-Bold.ttf"),
+        str(Path(IDCARD_FONT_DIR) / "PlayfairDisplay-Black.ttf"),
         "PlayfairDisplay-Bold.ttf", "PlayfairDisplaySC-Bold.ttf",
         "Times New Roman Bold.ttf", "Georgia Bold.ttf", "DejaVuSerif-Bold.ttf",
     ]
@@ -18885,6 +18891,9 @@ def _chess_asset_dirs():
         Path(__file__).resolve().parent / "Documents" / "Oxana" / "chess",
         Path(__file__).resolve().parent / "documents" / "oxana" / "chess",
         Path(__file__).resolve().parent / "document" / "oxana" / "chess",
+        ASSETS_DIR / "Chess",
+        ASSETS_DIR / "chess",
+        Path(__file__).resolve().parent / "Chess",
         Path(__file__).resolve().parent / "chess",
     ])
     seen = set()
@@ -19688,7 +19697,7 @@ def main():
     load_cnit_claims()
     load_cnit_book()
 
-    app = ApplicationBuilder().token(TOKEN).post_init(post_init).build()
+    app = ApplicationBuilder().token(BOT_TOKEN).post_init(post_init).build()
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("menu", menu))
