@@ -3,6 +3,7 @@ import asyncio
 import re
 import html
 import os
+import urllib.request
 from io import BytesIO
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -70,7 +71,13 @@ FORWARD_PUBLIC_CHAT_ID = -1003742691663
 FORWARD_STAFFTALK_CHAT_ID = -1003742691663
 
 FORNEUS_UID = 8065791665
-STOCKFISH_PATH = "/opt/homebrew/bin/stockfish"
+BASE_DIR = Path(__file__).resolve().parent
+STOCKFISH_PATH = str(BASE_DIR / "stockfish")
+if not os.path.exists(STOCKFISH_PATH):
+    print("Downloading Stockfish...")
+    url = "https://github.com/official-stockfish/Stockfish/releases/latest/download/stockfish-ubuntu-x86-64-avx2"
+    urllib.request.urlretrieve(url, STOCKFISH_PATH)
+    os.chmod(STOCKFISH_PATH, 0o755)
 
 CHESS_ASSET_DIR = str(Path.home() / "Documents" / "Oxana" / "chess")
 CHESS_BOARD_MARGIN = 37
